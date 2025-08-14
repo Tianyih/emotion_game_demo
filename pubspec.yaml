@@ -1,5 +1,5 @@
 name: candycrush
-description: "A new Flutter project."
+description: "Emotion Game - A fun candy crush style game to express emotions."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -39,6 +39,7 @@ dependencies:
   rxdart: ^0.27.7
   get: ^4.6.6
   just_audio: ^0.9.38
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
@@ -62,13 +63,22 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  fonts:
+    - family: ICELAND
+      fonts:
+        - asset: assets/fonts/Iceland-Regular.ttf
+          weight: 400
+
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/background/
     - assets/images/borders/
     - assets/images/tiles/
+    - assets/images/candle/
     - assets/images/deco/
     - assets/images/bombs/
+    - assets/images/levels/
+    - assets/images/items/
     - assets/audio/
     - assets/levels.json
 

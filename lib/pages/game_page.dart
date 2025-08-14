@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:candycrush/controller/game_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../animations/animation_chain.dart';
@@ -8,20 +7,23 @@ import '../animations/animation_combo_three.dart';
 import '../animations/animation_swap_tiles.dart';
 import '../bloc/bloc_provider.dart';
 import '../bloc/game_bloc.dart';
-import '../animations/model/animation_sequence.dart';
 import '../animations/model/animations_resolver.dart';
 import '../compoents/crush_board.dart';
+import '../compoents/inventory_panel.dart';
 import '../model/array_2d.dart';
 import '../model/audio.dart';
 import '../model/combo.dart';
 import '../model/level.dart';
 import '../model/row_col.dart';
 import '../model/tile.dart';
-import '../panel/moves/game_moves_left_panel.dart';
+import '../panel/moves/game_timer_panel.dart';
 import '../panel/objective/components/objective_panel.dart';
+import '../panel/timer/stream_timer_counter.dart'; // 添加这个导入
 import '../splash/game_over_splash.dart';
 import '../splash/game_reshuffling_splash.dart';
 import '../splash/game_splash.dart';
+import 'help_page.dart';
+import 'cheer_page.dart';
 
 class GamePage extends StatefulWidget {
   const GamePage({
@@ -41,24 +43,43 @@ class _GamePageState extends State<GamePage>
   bool _allowGesture = false;
   StreamSubscription? _gameOverSubscription;
   bool? _gameOverReceived;
+  final GlobalKey<InventoryPanelState> _inventoryKey =
+      GlobalKey<InventoryPanelState>();
 
   ///记录触发手势的糖果
   Tile? _gestureFromTile;
+
   ///记录触发手势的糖果位置，行和列
   RowCol? _gestureFromRowCol;
+
   ///记录手势的滑动距离
   Offset? _gestureOffsetStart;
+
   ///标记手势是否开始
   bool? _gestureStarted;
   static const double _MIN_GESTURE_DELTA = 2.0;
   OverlayEntry? _overlayEntryFromTile;
   OverlayEntry? _overlayEntryAnimateSwapTiles;
+  // 1. 新增变量
+  bool _showHelpButton = false;
+  int _helpButtonUsageCount = 0; // 新增：记录使用次数
+  StreamSubscription<int>? _timerSubscription;
+  // 1. 动画相关变量
+  late AnimationController _helpBtnAnimController;
+  late Animation<double> _helpBtnScaleAnimation;
 
   @override
   void initState() {
     super.initState();
     _gameOverReceived = false;
     WidgetsBinding.instance.addPostFrameCallback(_showGameStartSplash);
+    // 2. 初始化动画
+    _helpBtnAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _helpBtnScaleAnimation = Tween<double>(begin: 1.5, end: 1.0).animate(
+        CurvedAnimation(parent: _helpBtnAnimController, curve: Curves.easeOut));
   }
 
   @override
@@ -70,15 +91,74 @@ class _GamePageState extends State<GamePage>
     _gameBloc.reset();
     // Listen to "game over" notification
     _gameOverSubscription = _gameBloc.gameIsOver.listen(_onGameOver);
+    // 4. 订阅倒计时并触发动画
+    _timerSubscription?.cancel();
+    _timerSubscription = _gameBloc.timeLeft.listen((seconds) {
+      if (seconds <= 10 && !_showHelpButton && _helpButtonUsageCount < 3) {
+        setState(() {
+          _showHelpButton = true;
+        });
+        _helpBtnAnimController.forward(from: 0);
+      }
+      if ((seconds > 10 && _showHelpButton) || _helpButtonUsageCount >= 3) {
+        setState(() {
+          _showHelpButton = false;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    // 停止所有动画控制器
+    _helpBtnAnimController.dispose();
+
+    // 取消所有订阅
+    _timerSubscription?.cancel();
+    _timerSubscription = null;
     _gameOverSubscription?.cancel();
     _gameOverSubscription = null;
+
+    // 清理所有 Overlay Entry
     _overlayEntryAnimateSwapTiles?.remove();
+    _overlayEntryAnimateSwapTiles = null;
     _overlayEntryFromTile?.remove();
+    _overlayEntryFromTile = null;
     _gameSplash?.remove();
+    _gameSplash = null;
+
+    // 停止游戏计时器
+    _gameBloc.stopTimer();
+
+    // 重置游戏状态
+    _allowGesture = false;
+    _gestureFromTile = null;
+    _gestureFromRowCol = null;
+    _gestureOffsetStart = null;
+    _gestureStarted = false;
+    _showHelpButton = false;
+    _helpButtonUsageCount = 0;
+    _gameOverReceived = false;
+
+    // 清理游戏网格中的所有 tile 可见性
+    try {
+      for (int row = 0; row < widget.level.numberOfRows; row++) {
+        for (int col = 0; col < widget.level.numberOfCols; col++) {
+          final tile = _gameBloc.gameController.grid[row][col];
+          if (tile != null) {
+            tile.visible = false;
+          }
+        }
+      }
+    } catch (e) {
+      // 忽略可能的错误，因为页面正在销毁
+    }
+
+    // 强制刷新状态
+    if (mounted) {
+      setState(() {});
+    }
+
     super.dispose();
   }
 
@@ -86,64 +166,247 @@ class _GamePageState extends State<GamePage>
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
 
-    return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.close),
-        onPressed: () {
-          Navigator.of(context).pop();
-        },
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/background/background.jpg'),
-            fit: BoxFit.cover,
-          ),
+    return WillPopScope(
+      onWillPop: () async {
+        // 在返回前清理所有状态
+        _cleanupBeforeExit();
+        return true;
+      },
+      child: Scaffold(
+        floatingActionButton: FloatingActionButton(
+          child: const Icon(Icons.close),
+          onPressed: () {
+            // 在关闭前清理所有状态
+            _cleanupBeforeExit();
+            Navigator.of(context).pop();
+          },
         ),
-        child: GestureDetector(
-          onPanDown: (DragDownDetails details) => _onPanDown(details),
-          onPanStart: _onPanStart,
-          onPanEnd: _onPanEnd,
-          onPanUpdate: (DragUpdateDetails details) => _onPanUpdate(details),
-          onTap: _onTap,
-          onTapUp: _onPanEnd,
-          child: Stack(
-            children:[
-              _buildMovesLeftPanel(orientation),
-              _buildObjectivePanel(orientation),
-              _buildBoard(),
-              _buildTiles(),
-            ],
+        body: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/background/game_background.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: GestureDetector(
+            onPanDown: (DragDownDetails details) => _onPanDown(details),
+            onPanStart: _onPanStart,
+            onPanEnd: _onPanEnd,
+            onPanUpdate: (DragUpdateDetails details) => _onPanUpdate(details),
+            onTap: _onTap,
+            onTapUp: _onPanEnd,
+            child: Stack(
+              children: [
+                // 计时器面板 - 放在最上方中间（只显示计时器）
+                _buildTimerPanel(orientation),
+
+                // Level显示 - 放在左上角
+                _buildLevelPanel(),
+
+                // 目标面板 - 放在右上方
+                _buildObjectivePanel(orientation),
+
+                // 游戏板 - 居中
+                _buildBoard(),
+
+                // 瓦片层
+                _buildTiles(),
+
+                // 库存面板
+                _buildInventoryPanel(),
+
+                // Test button
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 20.0),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        _gameBloc.setTime(10);
+                      },
+                      child: const Text(
+                        'Test 10s',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 帮助按钮
+                if (_showHelpButton)
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 80.0),
+                      child: ScaleTransition(
+                        scale: _helpBtnScaleAnimation,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            minimumSize: const Size(350, 80),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 20, horizontal: 40),
+                          ),
+                          onPressed: () async {
+                            setState(() {
+                              _helpButtonUsageCount++;
+                              _showHelpButton = false;
+                            });
+                            _gameBloc.stopTimer();
+                            final int? extraSeconds =
+                                await Navigator.of(context).push<int>(
+                              MaterialPageRoute(
+                                  builder: (context) => const HelpPage()),
+                            );
+
+                            if (extraSeconds != null && extraSeconds > 0) {
+                              final currentTime =
+                                  _gameBloc.gameController.level.secondsLeft;
+                              _gameBloc.setTime(currentTime + extraSeconds);
+                            }
+
+                            _gameBloc.resumeTimer();
+                          },
+                          child: const Text(
+                            'I Need Help',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 40,
+                                fontFamily: 'ICELAND'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // Builds the score panel
-  Widget _buildMovesLeftPanel(Orientation orientation) {
-    Alignment alignment = orientation == Orientation.portrait
-        ? Alignment.topLeft
-        : Alignment.topLeft;
+  // 新增方法：在退出前清理所有状态
+  void _cleanupBeforeExit() {
+    // 停止所有动画控制器
+    _helpBtnAnimController.stop();
+
+    // 取消所有订阅
+    _timerSubscription?.cancel();
+    _timerSubscription = null;
+    _gameOverSubscription?.cancel();
+    _gameOverSubscription = null;
+
+    // 清理所有 Overlay Entry
+    _overlayEntryAnimateSwapTiles?.remove();
+    _overlayEntryAnimateSwapTiles = null;
+    _overlayEntryFromTile?.remove();
+    _overlayEntryFromTile = null;
+    _gameSplash?.remove();
+    _gameSplash = null;
+
+    // 停止游戏计时器
+    _gameBloc.stopTimer();
+
+    // 重置游戏状态
+    _allowGesture = false;
+    _gestureFromTile = null;
+    _gestureFromRowCol = null;
+    _gestureOffsetStart = null;
+    _gestureStarted = false;
+    _showHelpButton = false;
+    _helpButtonUsageCount = 0;
+    _gameOverReceived = false;
+
+    // 清理游戏网格中的所有 tile 可见性
+    try {
+      for (int row = 0; row < widget.level.numberOfRows; row++) {
+        for (int col = 0; col < widget.level.numberOfCols; col++) {
+          final tile = _gameBloc.gameController.grid[row][col];
+          if (tile != null) {
+            tile.visible = false;
+          }
+        }
+      }
+    } catch (e) {
+      // 忽略可能的错误
+    }
+  }
+
+  // 构建计时器面板 - 只显示计时器，放在最上方中间
+  Widget _buildTimerPanel(Orientation orientation) {
     return Align(
-      alignment: alignment,
-      child: const GameMovesLeftPanel(),
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 20),
+        child: Transform.scale(
+          scale: 1.4,
+          child: const StreamTimeCounter(),
+        ),
+      ),
     );
   }
 
-  // Builds the objective panel
+  // 构建Level面板 - 放在左上角
+  Widget _buildLevelPanel() {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 20, left: 20),
+        child: Text(
+          'Level: ${widget.level.index}',
+          style: const TextStyle(
+            fontFamily: 'ICELAND',
+            fontSize: 64,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 构建目标面板 - 放在右上方
   Widget _buildObjectivePanel(Orientation orientation) {
-    Alignment alignment = orientation == Orientation.portrait
-        ? Alignment.topRight
-        : Alignment.bottomLeft;
-
     return Align(
-      alignment: alignment,
-      child: const ObjectivePanel(),
+      alignment: Alignment.topRight,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 20, right: 40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Objectives标题
+            Text(
+              'Objectives',
+              style: const TextStyle(
+                fontFamily: 'ICELAND',
+                fontSize: 64,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            // 目标面板 - 紧贴标题下方，移除Transform.scale
+            const ObjectivePanel(),
+          ],
+        ),
+      ),
     );
   }
 
-  // Builds the game board
+  // 构建游戏板 - 居中
   Widget _buildBoard() {
     return Align(
       alignment: Alignment.center,
@@ -152,32 +415,56 @@ class _GamePageState extends State<GamePage>
       ),
     );
   }
-  // Builds the tiles
+
+  // Builds the inventory panel
+  Widget _buildInventoryPanel() {
+    return Align(
+      alignment: Alignment.bottomLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 10, bottom: 20),
+        child: InventoryPanel(
+          key: _inventoryKey,
+        ),
+      ),
+    );
+  }
+
+  // Builds the game board
   Widget _buildTiles() {
     return StreamBuilder<bool>(
       stream: _gameBloc.outReadyToDisplayTiles,
       initialData: null,
       builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+        // 添加额外的安全检查
+        if (!mounted) {
+          return Container();
+        }
+
         if (snapshot.data != null && snapshot.hasData) {
           List<Widget> tiles = <Widget>[];
-          Array2d<Tile> grid = _gameBloc.gameController.grid;
 
-          for (int row = 0; row < widget.level.numberOfRows; row++) {
-            for (int col = 0; col < widget.level.numberOfCols; col++) {
-              final Tile tile = grid[row][col];
-              if (tile.type != TileType.empty &&
-                  tile.type != TileType.forbidden &&
-                  tile.visible) {
+          try {
+            Array2d<Tile> grid = _gameBloc.gameController.grid;
 
-                // Make sure the widget is correctly positioned
-                tile.setPosition();
-                tiles.add(Positioned(
-                  left: tile.x,
-                  top: tile.y,
-                  child: tile.widget,
-                ));
+            for (int row = 0; row < widget.level.numberOfRows; row++) {
+              for (int col = 0; col < widget.level.numberOfCols; col++) {
+                final Tile tile = grid[row][col];
+                if (tile.type != TileType.empty &&
+                    tile.type != TileType.forbidden &&
+                    tile.visible) {
+                  // Make sure the widget is correctly positioned
+                  tile.setPosition();
+                  tiles.add(Positioned(
+                    left: tile.x,
+                    top: tile.y,
+                    child: tile.widget,
+                  ));
+                }
               }
             }
+          } catch (e) {
+            // 如果出现错误，返回空容器
+            return Container();
           }
 
           return Stack(
@@ -218,7 +505,9 @@ class _GamePageState extends State<GamePage>
     if (rowCol.row < 0 ||
         rowCol.row >= widget.level.numberOfRows ||
         rowCol.col < 0 ||
-        rowCol.col >= widget.level.numberOfCols) return;
+        rowCol.col >= widget.level.numberOfCols) {
+      return;
+    }
 
     // Check if the [row,col] corresponds to a possible swap
     Tile? selectedTile = _gameBloc.gameController.grid[rowCol.row][rowCol.col];
@@ -257,6 +546,7 @@ class _GamePageState extends State<GamePage>
       Overlay.of(context).insert(_overlayEntryFromTile!);
     }
   }
+
   //
   // The pointer starts to move
   //
@@ -311,7 +601,8 @@ class _GamePageState extends State<GamePage>
             rowCol.row == widget.level.numberOfRows) {
           // Not possible, outside the boundaries
         } else {
-          Tile? destTile = _gameBloc.gameController.grid[rowCol.row][rowCol.col];
+          Tile? destTile =
+              _gameBloc.gameController.grid[rowCol.row][rowCol.col];
           bool canBePlayed = false;
 
           if (destTile != null) {
@@ -331,13 +622,13 @@ class _GamePageState extends State<GamePage>
             _overlayEntryFromTile?.remove();
             _overlayEntryFromTile = null;
 
-
             // 2. Generate the up/down tiles
             Tile upTile = _gestureFromTile!.cloneForAnimation();
             Tile downTile = destTile.cloneForAnimation();
 
             // 3. Remove both tiles from the game grid
-            _gameBloc.gameController.grid[rowCol.row][rowCol.col].visible = false;
+            _gameBloc.gameController.grid[rowCol.row][rowCol.col].visible =
+                false;
             _gameBloc
                 .gameController
                 .grid[_gestureFromRowCol!.row][_gestureFromRowCol!.col]
@@ -358,7 +649,8 @@ class _GamePageState extends State<GamePage>
                           .visible = true;
                       _gameBloc
                           .gameController
-                          .grid[_gestureFromRowCol!.row][_gestureFromRowCol!.col]
+                          .grid[_gestureFromRowCol!.row]
+                              [_gestureFromRowCol!.col]
                           .visible = true;
 
                       // 6. Remove the overlay Entry
@@ -368,7 +660,7 @@ class _GamePageState extends State<GamePage>
                       if (swapAllowed == true) {
                         // Remember if the tile we move is a bomb
                         bool isSourceTileABomb =
-                        Tile.isBomb(_gestureFromTile!.type!);
+                            Tile.isBomb(_gestureFromTile!.type!);
 
                         // Swap the 2 tiles，交换目标糖果和原糖果的位置和坐标信息
                         _gameBloc.gameController
@@ -383,7 +675,7 @@ class _GamePageState extends State<GamePage>
 
                         /// Wait for both animations to complete
                         await Future.wait(
-                            [_animateCombo(comboOne),_animateCombo(comboTwo)]);
+                            [_animateCombo(comboOne), _animateCombo(comboTwo)]);
 
                         // Resolve the combos
                         _gameBloc.gameController
@@ -400,6 +692,7 @@ class _GamePageState extends State<GamePage>
                                   type: _gestureFromTile!.type),
                               _gameBloc);
                         }
+
                         /// Proceed with the falling tiles
                         await _playAllAnimations();
 
@@ -422,7 +715,7 @@ class _GamePageState extends State<GamePage>
                       // 7. Reset
                       _allowGesture = true;
                       _onPanEnd(null);
-                      if(mounted){
+                      if (mounted) {
                         setState(() {});
                       }
                     },
@@ -447,11 +740,11 @@ class _GamePageState extends State<GamePage>
       Audio.playAsset(AudioType.bomb);
 
       // Proceed with explosion
-      _gameBloc.gameController.proceedWithExplosion(_gestureFromTile!, _gameBloc);
+      _gameBloc.gameController
+          .proceedWithExplosion(_gestureFromTile!, _gameBloc);
 
       // Rebuild the board and proceed with animations
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-
         // Proceed with the falling tiles
         await _playAllAnimations();
 
@@ -491,7 +784,7 @@ class _GamePageState extends State<GamePage>
 
     switch (combo.type) {
       case ComboType.three:
-      // Hide the tiles before starting the animation
+        // Hide the tiles before starting the animation
         _showComboTilesForAnimation(combo, false);
 
         // Launch the animation for a chain of 3 tiles
@@ -511,7 +804,7 @@ class _GamePageState extends State<GamePage>
 
         // Play sound
         await Audio.playAsset(AudioType.move_down);
-        if(mounted){
+        if (mounted) {
           Overlay.of(context).insert(overlayEntry!);
         }
         break;
@@ -519,12 +812,12 @@ class _GamePageState extends State<GamePage>
       case ComboType.none:
       case ComboType.one:
       case ComboType.two:
-      // These type of combos are not possible, therefore directly return
+        // These type of combos are not possible, therefore directly return
         completer.complete(null);
         break;
 
       default:
-      // Hide the tiles before starting the animation
+        // Hide the tiles before starting the animation
         _showComboTilesForAnimation(combo, false);
 
         // We need to create the resulting tile
@@ -557,22 +850,24 @@ class _GamePageState extends State<GamePage>
 
         // Play sound
         await Audio.playAsset(AudioType.swap);
-        if(mounted){
+        if (mounted) {
           Overlay.of(context).insert(overlayEntry!);
         }
         break;
     }
     return completer.future;
   }
+
   //
   // Routine that launches all animations, resulting from a combo
   //
   Future<dynamic> _playAllAnimations() async {
     final completer = Completer();
+
     /// Determine all animations (and sequence of animations) that
     /// need to be played as a consequence of a combo
     final animationResolver =
-    AnimationsResolver(gameBloc: _gameBloc, level: widget.level);
+        AnimationsResolver(gameBloc: _gameBloc, level: widget.level);
     animationResolver.resolve();
 
     /// Determine the list of cells that are involved in the animation(s)
@@ -583,8 +878,7 @@ class _GamePageState extends State<GamePage>
     }
 
     // Obtain the animation sequences
-    final sequences =
-    animationResolver.getAnimationsSequences();
+    final sequences = animationResolver.getAnimationsSequences();
     int pendingSequences = sequences.length;
 
     /// Make all involved cells invisible
@@ -598,7 +892,6 @@ class _GamePageState extends State<GamePage>
       /// all the animations
       final overlayEntries = <OverlayEntry>[];
       for (final animationSequence in sequences) {
-
         /// Prepare all the animations at once.
         /// This is important to avoid having multiple rebuild
         /// when we are going to put them all on the Overlay
@@ -618,7 +911,6 @@ class _GamePageState extends State<GamePage>
                   // refresh the screen and yied the hand back
                   //
                   if (pendingSequences == 0) {
-
                     // Remove all OverlayEntries
                     for (final entry in overlayEntries) {
                       entry.remove();
@@ -630,7 +922,7 @@ class _GamePageState extends State<GamePage>
                     // We now need to proceed with a final rebuild and yield the hand
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       // Finally, yield the hand
-                      if(!completer.isCompleted){
+                      if (!completer.isCompleted) {
                         completer.complete(null);
                       }
                     });
@@ -648,7 +940,6 @@ class _GamePageState extends State<GamePage>
     setState(() {});
     return completer.future;
   }
-
 
   //
   // The game is over
@@ -669,7 +960,9 @@ class _GamePageState extends State<GamePage>
     // No gesture detection during the splash
     _allowGesture = false;
 
-    // Show the splash
+    // Stop the timer and show the splash
+    _gameBloc.stopTimer();
+
     _gameSplash = OverlayEntry(
         opaque: false,
         builder: (BuildContext context) {
@@ -683,6 +976,25 @@ class _GamePageState extends State<GamePage>
               // as the game is over, let's leave the game
               Navigator.of(context).pop();
             },
+            onCheerUpPressed: success
+                ? null
+                : () {
+                    // For failure case, remove splash but stay in game page
+                    _gameSplash!.remove();
+                    _gameSplash = null;
+
+                    // Navigate to CheerPage and refresh inventory on return
+                    Navigator.of(context)
+                        .push(
+                      MaterialPageRoute(
+                        builder: (_) => const CheerPage(),
+                      ),
+                    )
+                        .then((_) {
+                      // Refresh only the inventory without rebuilding the entire page
+                      _inventoryKey.currentState?.refreshInventory();
+                    });
+                  },
           );
         });
 
@@ -709,6 +1021,7 @@ class _GamePageState extends State<GamePage>
 
               // allow gesture detection
               _allowGesture = true;
+              _gameBloc.startTimer();
             },
           );
         });

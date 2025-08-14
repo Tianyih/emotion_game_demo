@@ -1,4 +1,3 @@
-
 import 'dart:math' as math;
 import 'package:candycrush/model/row_col.dart';
 import 'package:candycrush/model/tile.dart';
@@ -54,7 +53,7 @@ class AnimationsResolver {
   late Map<int, List<int>> _animationsIdentitiesPerDelay;
 
   // List of all cells, involved in the animations
-  final  _involvedCells = <RowCol>{};
+  final _involvedCells = <RowCol>{};
   Set<RowCol> get involvedCells => _involvedCells;
 
   // Longest delay for all animations
@@ -116,7 +115,8 @@ class AnimationsResolver {
 
     /// Initialize the _avalanches
     _avalanches = List<List<AvalancheTest>>.generate(
-      level.numberOfCols, (int index) => <AvalancheTest>[],
+      level.numberOfCols,
+      (int index) => <AvalancheTest>[],
     );
 
     /// Initialize the list of all animations per delay, and per identity
@@ -178,6 +178,7 @@ class AnimationsResolver {
       }
     } while (loopBasedOnAvalanche);
   }
+
   /// Post-Avalanches
   int _postAvalanches(int startDelay) {
     int newDelay = startDelay;
@@ -194,7 +195,8 @@ class AnimationsResolver {
           if (leftCol && _state[row + 1][col - 1] == CellState.occupied) {
             // There is an available cell on the top-left hand of this cell
             from = RowCol(row: row + 1, col: col - 1);
-          } else if (rightCol && _state[row + 1][col + 1] == CellState.occupied) {
+          } else if (rightCol &&
+              _state[row + 1][col + 1] == CellState.occupied) {
             // There is an available cell on the top-right hand of this cell
             from = RowCol(row: row + 1, col: col + 1);
           }
@@ -228,7 +230,6 @@ class AnimationsResolver {
             _state[row][col] = CellState.occupied;
             _types[row][col] = newTile.type;
 
-
             _tiles[from.row][from.col] = null;
             _state[from.row][from.col] = CellState.empty;
             _types[from.row][from.col] = TileType.empty;
@@ -245,7 +246,6 @@ class AnimationsResolver {
     return newDelay;
   }
 
-
   /// Resolves any potential combos
   int _resolveCombos(int startDelay) {
     int delay = startDelay;
@@ -254,12 +254,12 @@ class AnimationsResolver {
 
     for (final rowCol in _lastMoves) {
       final verticalChain =
-      chainHelper.checkVerticalChain(rowCol.row, rowCol.col, _tiles);
+          chainHelper.checkVerticalChain(rowCol.row, rowCol.col, _tiles);
       final horizontalChain =
-      chainHelper.checkHorizontalChain(rowCol.row, rowCol.col, _tiles);
+          chainHelper.checkHorizontalChain(rowCol.row, rowCol.col, _tiles);
       // Check if there is a combo
       final combo =
-      Combo(horizontalChain, verticalChain, rowCol.row, rowCol.col);
+          Combo(horizontalChain, verticalChain, rowCol.row, rowCol.col);
       if (combo.type != ComboType.none) {
         // We found a combo.  We therefore need to take appropriate actions
         TileAnimationType animationType;
@@ -299,11 +299,9 @@ class AnimationsResolver {
             );
           }
 
-
           /// Record the cells involved in the animation
           /// 记录动画中所有涉及的糖果
           _involvedCells.add(from);
-
 
           /// At the same time, we need to check the objectives
           /// 检查收集目标是否完成
@@ -334,7 +332,6 @@ class AnimationsResolver {
             _types[tile.row][tile.col] = combo.resultingTileType;
             _tiles[tile.row][tile.col].type = combo.resultingTileType!;
             _tiles[tile.row][tile.col].build();
-
           }
         }
       }
@@ -362,6 +359,7 @@ class AnimationsResolver {
 
     return count;
   }
+
   //
   // Routine that checks if any avalanche effect could happen.
   // This happens when a tile reaches its destination but there is
@@ -402,7 +400,7 @@ class AnimationsResolver {
         RowCol to = RowCol(row: row - 1, col: col + colOffset);
 
         // Register the avalanche animation
-        if(_tiles[row][col] != null){
+        if (_tiles[row][col] != null) {
           _registerAnimation(
             _identities[row][col],
             delay,
@@ -416,7 +414,6 @@ class AnimationsResolver {
             ),
           );
         }
-
 
         // Record the cells involved in the animation
         _involvedCells.addAll([from, to]);
@@ -434,11 +431,8 @@ class AnimationsResolver {
         _types[row][col] = TileType.empty;
         _tiles[row][col] = null;
 
-
-
         // As we are emptying a cell, the latter has no identity
         _identities[row][col] = -1;
-
 
         // record the move
         _lastMoves.add(RowCol(row: row - 1, col: col + colOffset));
@@ -454,6 +448,7 @@ class AnimationsResolver {
     // Inform that some
     return (movesCounter > 0);
   }
+
   //
   // Look for all movements (down) that need to happen in a particular column
   //
@@ -550,7 +545,6 @@ class AnimationsResolver {
         _tiles[dest][col] = Tile.clone(_tiles[row][col]);
         _tiles[dest][col].row = dest;
 
-
         // record the move
         _lastMoves.add(to);
 
@@ -614,7 +608,7 @@ class AnimationsResolver {
 
           // Make sure not to inject a direct combo
           while (
-          newTileType == null || newTileType == previousInsertedTileType) {
+              newTileType == null || newTileType == previousInsertedTileType) {
             newTileType =
                 Tile.random(math.Random()); // Generate a new random tile type
           }
@@ -728,7 +722,7 @@ class AnimationsResolver {
 
       // Let's sort the animations related to a single identity
       List<int> delays =
-      _animationsPerIdentityAndDelay[identity]!.keys.toList();
+          _animationsPerIdentityAndDelay[identity]!.keys.toList();
       delays.sort();
 
       int startDelay = 0;
@@ -742,7 +736,7 @@ class AnimationsResolver {
         if (item.index == 0) {
           startDelay = item.value;
           tileAnimation =
-          _animationsPerIdentityAndDelay[identity]![item.value]!;
+              _animationsPerIdentityAndDelay[identity]![item.value]!;
           tileType = tileAnimation.tileType;
 
           // If the tile does not exist, create it
@@ -758,7 +752,6 @@ class AnimationsResolver {
             );
             tile!.build();
             tileAnimation.tile = tile!;
-
           }
         }
         endDelay = math.max(endDelay, item.value);
@@ -768,7 +761,7 @@ class AnimationsResolver {
       });
 
       // Record the sequence
-      if(tileType != null){
+      if (tileType != null) {
         sequences.add(AnimationSequence(
           tileType: tileType!,
           startDelay: startDelay,

@@ -1,7 +1,6 @@
 import 'package:candycrush/panel/objective/components/objective_item.dart';
 import 'package:flutter/material.dart';
 
-import '../compoents/double_curved_container.dart';
 import '../model/level.dart';
 
 class GameSplash extends StatefulWidget {
@@ -21,38 +20,44 @@ class GameSplash extends StatefulWidget {
 class _GameSplashState extends State<GameSplash>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _animationAppear;
+  late Animation<double> _animationScale;
+  late Animation<double> _animationOpacity;
 
   @override
   void initState() {
     super.initState();
 
     _controller = AnimationController(
-      duration: const Duration(seconds: 4),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
-    )
-      ..addListener(() {
-        setState(() {});
-      })
-      ..addStatusListener((AnimationStatus status) {
+    )..addStatusListener((AnimationStatus status) {
         if (status == AnimationStatus.completed) {
-          if (widget.onComplete != null) {
-            widget.onComplete?.call();
-          }
+          // Wait 3 seconds after animation completes, then auto-close
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted && widget.onComplete != null) {
+              widget.onComplete?.call();
+            }
+          });
         }
       });
 
-    _animationAppear = Tween<double>(
+    _animationScale = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.elasticOut,
+      ),
+    );
+
+    _animationOpacity = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(
-          0.0,
-          0.1,
-          curve: Curves.easeIn,
-        ),
+        curve: const Interval(0.0, 0.3, curve: Curves.easeIn),
       ),
     );
 
@@ -69,50 +74,122 @@ class _GameSplashState extends State<GameSplash>
     super.dispose();
   }
 
+  void _handleStartGame() {
+    if (widget.onComplete != null) {
+      widget.onComplete?.call();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     Size screenSize = MediaQuery.of(context).size;
 
-    List<Widget> objectiveWidgets =  widget.level.objectives.map((obj){
+    List<Widget> objectiveWidgets = widget.level.objectives.map((obj) {
       return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
         child: ObjectiveItem(objective: obj, level: widget.level),
       );
     }).toList();
 
     return AnimatedBuilder(
-      animation: _animationAppear,
-      child: Material(
-        color: Colors.transparent,
-        child: DoubleCurvedContainer(
-          width: screenSize.width,
-          height: 150.0,
-          outerColor: Colors.blue[700]!,
-          innerColor: Colors.blue,
+      animation: _controller,
+      builder: (BuildContext context, Widget? child) {
+        return Material(
+          color: Colors.black.withOpacity(0.5 * _animationOpacity.value),
           child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  'Level:  ${widget.level.index}',
-                  style: const TextStyle(fontSize: 24.0, color: Colors.white),
+            child: Transform.scale(
+              scale: _animationScale.value,
+              child: Container(
+                width: screenSize.width * 0.8,
+                constraints: const BoxConstraints(maxWidth: 400),
+                decoration: BoxDecoration(
+                  color: Colors.blue[100]!,
+                  border: Border.all(color: Colors.blue[700]!, width: 3),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8.0),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: objectiveWidgets,
+                padding: const EdgeInsets.all(30),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Level title
+                    Icon(
+                      Icons.play_circle_filled,
+                      size: 60,
+                      color: Colors.blue[700],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Level number
+                    Text(
+                      'Level ${widget.level.index}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'ICELAND',
+                        fontSize: 42,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Objectives title
+                    Text(
+                      'Objectives:',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'ICELAND',
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Objectives list
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8.0,
+                      runSpacing: 8.0,
+                      children: objectiveWidgets,
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Start button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _handleStartGame,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[700],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 5,
+                        ),
+                        child: const Text(
+                          'Start Game',
+                          style: TextStyle(
+                            fontFamily: 'ICELAND',
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
-      builder: (BuildContext context, Widget? child) {
-        return Positioned(
-          left: 0.0,
-          top: 150.0 + 100.0 * _animationAppear.value,
-          child: child!,
         );
       },
     );

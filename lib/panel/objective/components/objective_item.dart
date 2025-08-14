@@ -27,11 +27,12 @@ class ObjectiveItem extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(
-          width: 32.0,
-          height: 32.0,
+          width: 42.0,
+          height: 42.0,
           child: tile.widget,
         ),
-        Text('${objective.count}', style: const TextStyle(color: Colors.white)),
+        Text('${objective.count}',
+            style: TextStyle(color: Colors.blue[700], fontSize: 30.0)),
       ],
     );
   }

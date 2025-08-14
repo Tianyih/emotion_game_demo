@@ -2,6 +2,7 @@ import 'package:just_audio/just_audio.dart';
 
 class Audio {
   static final AudioPlayer audioPlayer = AudioPlayer();
+
   /// Initialization.  We pre-load all sounds.
   static final items = [
     AudioSource.uri(Uri.parse("asset:///assets/audio/swap.wav")),
@@ -10,6 +11,9 @@ class Audio {
     AudioSource.uri(Uri.parse("asset:///assets/audio/game_start.wav")),
     AudioSource.uri(Uri.parse("asset:///assets/audio/win.wav")),
     AudioSource.uri(Uri.parse("asset:///assets/audio/lost.wav")),
+    AudioSource.uri(
+        Uri.parse("asset:///assets/audio/Female Voice Example.mp3")),
+    AudioSource.uri(Uri.parse("asset:///assets/audio/Male Voice Example.mp3")),
   ];
 
   static playAsset(AudioType audioType) async {
@@ -38,7 +42,25 @@ class Audio {
         await audioPlayer.setAudioSource(items[5]);
         audioPlayer.play();
         break;
+      case AudioType.female_voice:
+        await audioPlayer.setAudioSource(items[6]);
+        audioPlayer.play();
+        break;
+      case AudioType.male_voice:
+        await audioPlayer.setAudioSource(items[7]);
+        audioPlayer.play();
+        break;
     }
+  }
+
+  /// Stop audio playback
+  static void stop() {
+    audioPlayer.stop();
+  }
+
+  /// Pause audio playback
+  static void pause() {
+    audioPlayer.pause();
   }
 }
 
@@ -49,4 +71,6 @@ enum AudioType {
   game_start,
   win,
   lost,
+  female_voice,
+  male_voice,
 }

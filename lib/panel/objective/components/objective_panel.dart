@@ -13,9 +13,7 @@ class ObjectivePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final GameBloc gameBloc = BlocProvider.of<GameBloc>(context)!.bloc;
     final Level level = gameBloc.gameController.level;
-    final Orientation orientation = MediaQuery.of(context).orientation;
-    final EdgeInsets paddingTop = EdgeInsets.only(
-        top: (orientation == Orientation.portrait ? 10.0 : 0.0));
+
     //
     // Build the objectives
     //
@@ -26,19 +24,16 @@ class ObjectivePanel extends StatelessWidget {
       );
     }).toList();
 
-    return Padding(
-      padding: paddingTop,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[300]!.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(20.0),
-          border: Border.all(width: 5.0, color: Colors.black.withOpacity(0.5)),
-        ),
-        height: 80.0,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: objectiveWidgets,
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[300]!.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(20.0),
+        border: Border.all(width: 5.0, color: Colors.black.withOpacity(0.5)),
+      ),
+      height: 100.0,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: objectiveWidgets,
       ),
     );
   }

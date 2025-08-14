@@ -18,7 +18,7 @@ class StreamObjectiveItem extends StatefulWidget {
 
   @override
   StreamObjectiveItemState createState() {
-    return new StreamObjectiveItemState();
+    return StreamObjectiveItemState();
   }
 }
 
@@ -82,7 +82,7 @@ class StreamObjectiveItemState extends State<StreamObjectiveItem> {
     // Trick to get the image of the tile
     //
     Tile tile =
-    Tile(type: widget.objective.type, level: gameBloc.gameController.level);
+        Tile(type: widget.objective.type, level: gameBloc.gameController.level);
     tile.build();
 
     return Column(
@@ -90,8 +90,8 @@ class StreamObjectiveItemState extends State<StreamObjectiveItem> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(
-          width: 32.0,
-          height: 32.0,
+          width: 42.0,
+          height: 42.0,
           child: tile.widget,
         ),
         StreamBuilder<int>(

@@ -95,11 +95,11 @@ class BlocProviderState<T> extends State<BlocProvider<T>> {
 
 class BlocProviderInherited<T> extends InheritedWidget {
   const BlocProviderInherited({
-    Key? key,
-    required Widget child,
+    super.key,
+    required super.child,
     required this.bloc,
     required this.state,
-  }) : super(key: key, child: child);
+  });
 
   final T bloc;
   final BlocProviderState<T> state;

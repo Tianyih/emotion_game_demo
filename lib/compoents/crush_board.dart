@@ -7,8 +7,7 @@ import 'package:candycrush/bloc/game_bloc.dart';
 import '../model/level.dart';
 
 class CrushBoard extends StatefulWidget {
-  const CrushBoard({super.key,
-    required this.level});
+  const CrushBoard({super.key, required this.level});
 
   final Level level;
 
@@ -37,7 +36,8 @@ class _CrushBoardState extends State<CrushBoard> {
   /// 显示游戏棋盘
   void _buildDecorations() {
     if (_decorations != null) return;
-    _decorations = Array2d<BoxDecoration>(widget.level.numberOfCols + 1, widget.level.numberOfRows + 1);
+    _decorations = Array2d<BoxDecoration>(
+        widget.level.numberOfCols + 1, widget.level.numberOfRows + 1);
     for (int row = 0; row <= widget.level.numberOfRows; row++) {
       for (int col = 0; col <= widget.level.numberOfCols; col++) {
         // If there is nothing at (row, col) => no decoration
@@ -86,10 +86,12 @@ class _CrushBoardState extends State<CrushBoard> {
       }
     }
   }
+
   void _buildChecker() {
     if (_checker != null) return;
 
-    _checker = Array2d<Color>(widget.level.numberOfRows, widget.level.numberOfCols);
+    _checker =
+        Array2d<Color>(widget.level.numberOfRows, widget.level.numberOfCols);
     int counter = 0;
 
     for (int row = 0; row < widget.level.numberOfRows; row++) {
@@ -111,7 +113,8 @@ class _CrushBoardState extends State<CrushBoard> {
     gameBloc = BlocProvider.of<GameBloc>(context)!.bloc;
     final Size screenSize = MediaQuery.of(context).size;
     final double maxDimension = math.min(screenSize.width, screenSize.height);
-    final double maxTileWidth = math.min(maxDimension / 12, 28);
+    final double maxTileWidth =
+        math.min(maxDimension / 12, 45); // 从35改为45，让棋盘更大
 
     /// Dimensions of the board
     final double width = maxTileWidth * (widget.level.numberOfCols + 1) * 1.1;
@@ -122,14 +125,15 @@ class _CrushBoardState extends State<CrushBoard> {
       height: height,
       color: Colors.transparent,
       child: Stack(
-        children:[
+        children: [
           _showDecorations(maxTileWidth),
-         // We pass the gameBloc since we will need to use it to pass the dimensions and coordinates
+          // We pass the gameBloc since we will need to use it to pass the dimensions and coordinates
           _showGrid(maxTileWidth),
         ],
       ),
     );
   }
+
   Widget _showDecorations(double width) {
     return GridView.builder(
       padding: const EdgeInsets.all(0.0),
@@ -137,7 +141,8 @@ class _CrushBoardState extends State<CrushBoard> {
         crossAxisCount: widget.level.numberOfCols + 1,
         childAspectRatio: 1.01,
       ),
-      itemCount: (widget.level.numberOfCols + 1) * (widget.level.numberOfRows + 1),
+      itemCount:
+          (widget.level.numberOfCols + 1) * (widget.level.numberOfRows + 1),
       itemBuilder: (BuildContext context, int index) {
         final int col = index % (widget.level.numberOfCols + 1);
         final int row = (index / (widget.level.numberOfRows + 1)).floor();
@@ -145,10 +150,12 @@ class _CrushBoardState extends State<CrushBoard> {
         //
         // Use the decoration from bottom up during this build
         //
-        return Container(decoration: _decorations![widget.level.numberOfRows - row][col]);
+        return Container(
+            decoration: _decorations![widget.level.numberOfRows - row][col]);
       },
     );
   }
+
   Widget _showGrid(double width) {
     bool isFirst = true;
     return Padding(
@@ -169,33 +176,35 @@ class _CrushBoardState extends State<CrushBoard> {
             color: _checker![widget.level.numberOfRows - row - 1][col],
             child: LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
-                  if (isFirst) {
-                    isFirst = false;
-                    return Container(key: _keyCheckerCell);
-                  }
-                  return Container();
-                }),
+              if (isFirst) {
+                isFirst = false;
+                return Container(key: _keyCheckerCell);
+              }
+              return Container();
+            }),
           );
         },
       ),
     );
   }
+
   Rect _getDimensionsFromContext(BuildContext context) {
     final RenderBox box = context.findRenderObject() as RenderBox;
 
     final Offset topLeft = box.size.topLeft(box.localToGlobal(Offset.zero));
     final Offset bottomRight =
-    box.size.bottomRight(box.localToGlobal(Offset.zero));
+        box.size.bottomRight(box.localToGlobal(Offset.zero));
     return Rect.fromLTRB(
         topLeft.dx, topLeft.dy, bottomRight.dx, bottomRight.dy);
   }
+
   void _afterBuild() {
     //
     // Let's get the dimensions and position of the exact position of the board
     //
     if (_keyChecker.currentContext != null) {
       final Rect rectBoard =
-      _getDimensionsFromContext(_keyChecker.currentContext!);
+          _getDimensionsFromContext(_keyChecker.currentContext!);
 
       //
       // Save the position of the board
@@ -207,7 +216,7 @@ class _CrushBoardState extends State<CrushBoard> {
       // Let's get the dimensions of one cell of the board
       //
       final Rect rectBoardSquare =
-      _getDimensionsFromContext(_keyCheckerCell.currentContext!);
+          _getDimensionsFromContext(_keyCheckerCell.currentContext!);
 
       //
       // Save it for later reuse

@@ -21,8 +21,7 @@ class GameBloc implements BlocBase {
   // at game load is ready.  This is done as soon as this BLoC receives the
   // dimensions/position of the board as well as the dimensions of a tile
   //
-  final  _readyToDisplayTilesController =
-  BehaviorSubject<bool>();
+  final _readyToDisplayTilesController = BehaviorSubject<bool>();
   Function get setReadyToDisplayTiles =>
       _readyToDisplayTilesController.sink.add;
   Stream<bool> get outReadyToDisplayTiles =>
@@ -44,10 +43,12 @@ class GameBloc implements BlocBase {
   Stream<bool> get gameIsOver => _gameIsOverController.stream;
 
   //
-  // Controller that emits the number of moves left for the game
+  // Controller that emits the remaining time (seconds) for the game
   //
-  final _movesLeftController = PublishSubject<int>();
-  Stream<int> get movesLeftCount => _movesLeftController.stream;
+  final _timeLeftController = PublishSubject<int>();
+  Stream<int> get timeLeft => _timeLeftController.stream;
+  Timer? _timer;
+  int _currentTime = 0;
 
   //
   // List of all level definitions
@@ -72,6 +73,13 @@ class GameBloc implements BlocBase {
     _loadLevels();
   }
 
+  // Add a method to ensure levels are loaded
+  Future<void> ensureLevelsLoaded() async {
+    while (_maxLevel == 0) {
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
   //
   // The user wants to select a level.
   // We validate the level number and emit the requested Level
@@ -81,7 +89,10 @@ class GameBloc implements BlocBase {
   //  e.g.  bloc.setLevel(1).then(() => )
   //
   Future<Level> setLevel(int levelIndex) async {
-    _levelNumber = (levelIndex - 1).clamp(0, _maxLevel);
+    // Ensure levels are loaded before proceeding
+    await ensureLevelsLoaded();
+
+    _levelNumber = (levelIndex - 1).clamp(0, _maxLevel - 1);
 
     //
     // Initialize the Game
@@ -129,11 +140,11 @@ class GameBloc implements BlocBase {
 
     // Check if the game is won
     bool isWon = true;
-    gameController.level.objectives.forEach((Objective objective) {
+    for (var objective in gameController.level.objectives) {
       if (objective.count > 0) {
         isWon = false;
       }
-    });
+    }
 
     // If the game is won, send a notification
     if (isWon) {
@@ -141,21 +152,10 @@ class GameBloc implements BlocBase {
     }
   }
 
-  //
-  // A move has been played, let's decrement the number of moves
-  // left and check if the game is over
-  //
-  void playMove() {
-    int movesLeft = gameController.level.decrementMove();
-
-    // Emit the number of moves left (to refresh the moves left panel)
-    _movesLeftController.sink.add(movesLeft);
-
-    // There is no move left, so inform that the game is over
-    if (movesLeft == 0) {
-      _gameIsOverController.sink.add(false);
-    }
-  }
+  // A move has been played. This was previously used to decrement the number
+  // of moves left.  With the timer based gameplay this method is kept for
+  // compatibility but does nothing.
+  void playMove() {}
 
   //
   // When a game starts, we need to reset everything
@@ -164,11 +164,52 @@ class GameBloc implements BlocBase {
     gameController.level.resetObjectives();
   }
 
+  void startTimer() {
+    _timer?.cancel();
+    _currentTime = gameController.level.maxSeconds;
+    _timeLeftController.sink.add(_currentTime);
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _currentTime = gameController.level.decrementSecond();
+      _timeLeftController.sink.add(_currentTime);
+      if (_currentTime == 0) {
+        timer.cancel();
+        _gameIsOverController.sink.add(false);
+      }
+    });
+  }
+
+  void stopTimer() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  void resumeTimer() {
+    if (_timer == null && _currentTime > 0) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        _currentTime = gameController.level.decrementSecond();
+        _timeLeftController.sink.add(_currentTime);
+        if (_currentTime <= 0) {
+          timer.cancel();
+          _gameIsOverController.sink
+              .add(false); // Send game over signal when time runs out
+        }
+      });
+    }
+  }
+
+  // 设置剩余时间
+  void setTime(int seconds) {
+    _currentTime = seconds;
+    gameController.level.setSecondsLeft(seconds);
+    _timeLeftController.sink.add(seconds);
+  }
+
   @override
   void dispose() {
     _readyToDisplayTilesController.close();
     _objectiveEventsController.close();
     _gameIsOverController.close();
-    _movesLeftController.close();
+    _timeLeftController.close();
+    _timer?.cancel();
   }
 }

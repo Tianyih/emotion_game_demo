@@ -7,7 +7,7 @@ import '../panel/objective/model/objective.dart';
 ///
 /// Definition of a level in terms of:
 ///  - grid template
-///  - maximum number of moves
+///  - duration (seconds)
 ///  - number of columns
 ///  - number of rows
 ///  - list of objectives
@@ -17,13 +17,13 @@ class Level extends Object {
   late Array2d grid;
   final int _rows;
   final int _cols;
-  final int _maxMoves;
-  int _movesLeft = 0;
+  final int _maxSeconds;
+  int _secondsLeft = 0;
   late List<Objective> _objectives;
 
   /// Variables that depend on the physical layout of the device
-  double tileWidth = 0.0;
-  double tileHeight = 0.0;
+  double tileWidth = 48.0;
+  double tileHeight = 48.0;
   double boardLeft = 0.0;
   double boardTop = 0.0;
 
@@ -31,7 +31,7 @@ class Level extends Object {
       : _index = json["level"],
         _rows = json["rows"],
         _cols = json["cols"],
-        _maxMoves = json["moves"] {
+        _maxSeconds = 90 {
     // Initialize the grid to the dimensions
     grid = Array2d(_rows, _cols);
 
@@ -56,7 +56,6 @@ class Level extends Object {
 
     // First-time initialization
     resetObjectives();
-
   }
 
   // @override
@@ -67,9 +66,8 @@ class Level extends Object {
   int get numberOfRows => _rows;
   int get numberOfCols => _cols;
   int get index => _index;
-  int get maxMoves => _maxMoves;
-  int get movesLeft => _movesLeft;
-
+  int get maxSeconds => _maxSeconds;
+  int get secondsLeft => _secondsLeft;
 
   List<Objective> get objectives => List.unmodifiable(_objectives);
 
@@ -80,13 +78,20 @@ class Level extends Object {
     for (final objective in _objectives) {
       objective.reset();
     }
-    _movesLeft = _maxMoves;
+    _secondsLeft = _maxSeconds;
   }
 
   //
-  // Decrement the number of moves left
+  // Decrement the remaining time
   //
-  int decrementMove() {
-    return (--_movesLeft).clamp(0, _maxMoves);
+  int decrementSecond() {
+    return (--_secondsLeft).clamp(0, _maxSeconds);
+  }
+
+  //
+  // Set the remaining time
+  //
+  void setSecondsLeft(int seconds) {
+    _secondsLeft = seconds.clamp(0, _maxSeconds);
   }
 }

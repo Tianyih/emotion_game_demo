@@ -117,7 +117,7 @@ class Tile extends Object {
         case TileType.purple_h:
         case TileType.yellow_v:
         case TileType.yellow_h:
-         final name = type!.name.split("_").firstOrNull;
+          final name = type!.name.split("_").firstOrNull;
           imageAsset = "bombs/$name.png";
           break;
 
@@ -188,8 +188,15 @@ class Tile extends Object {
   Widget getWidgetSized(double width, double height) => SizedBox(
     width: width,
     height: height,
-    child: _widget,
+    child: Center(
+      child: FractionallySizedBox(
+        widthFactor: 0.9,
+        heightFactor: 0.9,
+        child: _widget,
+      ),
+    ),
   );
+
 
   //
   // Can the Tile move?
@@ -211,7 +218,7 @@ class Tile extends Object {
   static TileType random(math.Random rnd) {
     int minValue = _firstNormalTile;
     int maxValue = _lastNormalTile;
-    int value = rnd.nextInt(maxValue - minValue) + minValue;
+    int value = rnd.nextInt(maxValue - minValue + 1) + minValue;
     return TileType.values[value];
   }
 
