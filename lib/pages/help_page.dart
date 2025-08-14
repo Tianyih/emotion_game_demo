@@ -221,28 +221,38 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 32),
                 Expanded(
-                  child: GestureDetector(
-                    onPanUpdate: (details) {
-                      // 检测向上滑动手势 (dy < 0 表示向上)
-                      if (details.delta.dy < -5) {
-                        _onSwipeUp();
-                      }
-                    },
-                    child: Center(
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 50.0),
-                          child: Image.asset(
-                            _candleIsLit
-                                ? 'assets/images/candle/candle_lit.jpg'
-                                : 'assets/images/candle/candle_out.jpg',
-                            fit: BoxFit.contain,
-                            height: MediaQuery.of(context).size.height * 0.4,
+                  child: Stack(
+                    children: [
+                      // 手势检测区域
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onPanUpdate: (details) {
+                            // 检测向上滑动手势 (dy < 0 表示向上)
+                            if (details.delta.dy < -5) {
+                              _onSwipeUp();
+                            }
+                          },
+                        ),
+                      ),
+                      // 固定位置的蜡烛
+                      Positioned(
+                        bottom: 50,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Container(
+                            width: 200,
+                            height: 250,
+                            child: Image.asset(
+                              _candleIsLit
+                                  ? 'assets/images/candle/candle_lit.jpg'
+                                  : 'assets/images/candle/candle_out.jpg',
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],

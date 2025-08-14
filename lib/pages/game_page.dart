@@ -381,17 +381,17 @@ class _GamePageState extends State<GamePage>
 
   // 构建目标面板 - 放在右上方
   Widget _buildObjectivePanel(Orientation orientation) {
-    return Align(
+    return const Align(
       alignment: Alignment.topRight,
       child: Padding(
-        padding: const EdgeInsets.only(top: 20, right: 40),
+        padding: EdgeInsets.only(top: 20, right: 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             // Objectives标题
             Text(
               'Objectives',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'ICELAND',
                 fontSize: 64,
                 color: Colors.white,
@@ -399,7 +399,7 @@ class _GamePageState extends State<GamePage>
               ),
             ),
             // 目标面板 - 紧贴标题下方，移除Transform.scale
-            const ObjectivePanel(),
+            ObjectivePanel(),
           ],
         ),
       ),
