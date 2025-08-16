@@ -186,22 +186,22 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Display text (moved above and larger)
+                // Display text - 缩小字体并减少间距
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                   child: Text(
                     _displayText,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontFamily: 'ICELAND',
-                      fontSize: 70,
+                      fontSize: 50, // 从70缩小到50
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
-                // Calming text with fade animation (moved below)
+                const SizedBox(height: 16), // 从32减少到16
+                // Calming text with fade animation - 缩小字体
                 FadeTransition(
                   opacity: _fadeAnimation,
                   child: Padding(
@@ -211,19 +211,38 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontFamily: 'ICELAND',
-                        fontSize: 40,
+                        fontSize: 28, // 从40缩小到28
                         fontWeight: FontWeight.w400,
                         color: Colors.white,
-                        height: 1.5,
+                        height: 1.3, // 从1.5减少到1.3
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 16), // 从32减少到16
                 Expanded(
                   child: Stack(
                     children: [
-                      // 手势检测区域
+                      // 蜡烛图片 - 放在手势检测区域下面
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Container(
+                            width: 300,
+                            height: 400,
+                            child: Image.asset(
+                              _candleIsLit
+                                  ? 'assets/images/candle/candle_lit.jpg'
+                                  : 'assets/images/candle/candle_out.jpg',
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // 手势检测区域 - 放在蜡烛图片上面，确保能接收到手势
                       Positioned.fill(
                         child: GestureDetector(
                           onPanUpdate: (details) {
@@ -232,24 +251,7 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                               _onSwipeUp();
                             }
                           },
-                        ),
-                      ),
-                      // 固定位置的蜡烛
-                      Positioned(
-                        bottom: 50,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Container(
-                            width: 200,
-                            height: 250,
-                            child: Image.asset(
-                              _candleIsLit
-                                  ? 'assets/images/candle/candle_lit.jpg'
-                                  : 'assets/images/candle/candle_out.jpg',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
+                          behavior: HitTestBehavior.translucent, // 改为translucent，允许手势穿透到下层
                         ),
                       ),
                     ],
