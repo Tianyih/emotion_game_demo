@@ -28,5 +28,7 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {},
+  "regions": ["syd1"]
 }
