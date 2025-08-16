@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "Emotion Game - A fun candy crush style game",
   "scripts": {
-    "build": "chmod +x build.sh && ./build.sh",
-    "vercel-build": "chmod +x build.sh && ./build.sh"
+    "build": "npm run install-flutter && npm run build-flutter",
+    "install-flutter": "curl -L -o flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.5-stable.tar.xz && tar xf flutter.tar.xz && export PATH=\"$PATH:$PWD/flutter/bin\" && flutter doctor",
+    "build-flutter": "export PATH=\"$PATH:$PWD/flutter/bin\" && flutter pub get && flutter build web --release"
   },
   "engines": {
     "node": ">=18.0.0"
