@@ -4,7 +4,6 @@
 .packages
 .pub-cache/
 .pub/
-build/
 coverage/
 *.iml
 *.lock
@@ -13,4 +12,3 @@ coverage/
 android/
 ios/
 test/
-build.sh
