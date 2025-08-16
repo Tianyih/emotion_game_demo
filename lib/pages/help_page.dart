@@ -188,7 +188,8 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
               children: [
                 // Display text - 缩小字体并减少间距
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0, vertical: 16.0),
                   child: Text(
                     _displayText,
                     textAlign: TextAlign.center,
@@ -251,7 +252,8 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                               _onSwipeUp();
                             }
                           },
-                          behavior: HitTestBehavior.translucent, // 改为translucent，允许手势穿透到下层
+                          behavior: HitTestBehavior
+                              .translucent, // 改为translucent，允许手势穿透到下层
                         ),
                       ),
                     ],
