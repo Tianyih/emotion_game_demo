@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../bloc/bloc_provider.dart';
 import '../bloc/game_bloc.dart';
+import '../utils/optimized_image.dart';
 import 'game_page.dart';
 import 'levels_page.dart';
 import '../model/level.dart';
@@ -19,12 +20,9 @@ class _HomePageState extends State<HomePage> {
     final gameBloc = BlocProvider.of<GameBloc>(context)!.bloc;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image:
-                AssetImage('assets/images/background/home_background_wide.png'),
-            fit: BoxFit.cover,
-          ),
+        decoration: OptimizedDecorationImage.getDecorationImage(
+          imagePath: 'assets/images/background/home_background_wide.png',
+          fit: BoxFit.cover,
         ),
         child: Center(
           child: Column(

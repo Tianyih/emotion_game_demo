@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../model/audio.dart';
+import '../utils/optimized_image.dart';
 import 'therapist_choice_dialog.dart';
 
 class HelpPage extends StatefulWidget {
@@ -176,11 +177,9 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
         ),
         extendBodyBehindAppBar: true, // 让body延伸到AppBar后面
         body: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/background/help_background.png'),
-              fit: BoxFit.cover,
-            ),
+          decoration: OptimizedDecorationImage.getDecorationImage(
+            imagePath: 'assets/images/background/help_background.png',
+            fit: BoxFit.cover,
           ),
           child: SafeArea(
             child: Column(
@@ -233,12 +232,11 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                           child: Container(
                             width: 300,
                             height: 400,
-                            child: Image.asset(
-                              _candleIsLit
+                            child: OptimizedImage(
+                              imagePath: _candleIsLit
                                   ? 'assets/images/candle/candle_lit.jpg'
                                   : 'assets/images/candle/candle_out.jpg',
                               fit: BoxFit.cover,
-                              alignment: Alignment.center,
                             ),
                           ),
                         ),

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'level.dart';
+import '../utils/image_preloader.dart';
 
 /// Tile
 class Tile extends Object {
@@ -83,7 +84,7 @@ class Tile extends Object {
   Widget _buildDecoration([String path = ""]) {
     String imageAsset = path;
     if (imageAsset == "") {
-      if(depth < 0)depth = 0;
+      if (depth < 0) depth = 0;
       switch (type) {
         case TileType.wall:
           imageAsset = "deco/wall.png";
@@ -130,12 +131,18 @@ class Tile extends Object {
           break;
       }
     }
+    // 尝试使用预加载的图片
+    final preloadedImage =
+        ImagePreloader.getPreloadedImage('assets/images/$imageAsset');
+    final imageProvider =
+        preloadedImage ?? AssetImage('assets/images/$imageAsset');
+
     return Container(
       decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/images/$imageAsset'),
-            fit: BoxFit.contain,
-          )),
+        image: imageProvider,
+        fit: BoxFit.contain,
+      )),
     );
   }
 
@@ -160,6 +167,7 @@ class Tile extends Object {
 
     return tile;
   }
+
   /// Swaps this tile (row, col) with the ones of another Tile
   void swapRowColWith(Tile destTile) {
     ///交换双方的坐标信息和位置信息
@@ -186,17 +194,16 @@ class Tile extends Object {
   Widget get widget => getWidgetSized(level!.tileWidth, level!.tileHeight);
 
   Widget getWidgetSized(double width, double height) => SizedBox(
-    width: width,
-    height: height,
-    child: Center(
-      child: FractionallySizedBox(
-        widthFactor: 0.9,
-        heightFactor: 0.9,
-        child: _widget,
-      ),
-    ),
-  );
-
+        width: width,
+        height: height,
+        child: Center(
+          child: FractionallySizedBox(
+            widthFactor: 0.9,
+            heightFactor: 0.9,
+            child: _widget,
+          ),
+        ),
+      );
 
   //
   // Can the Tile move?
@@ -208,8 +215,8 @@ class Tile extends Object {
   //
   bool get canFall =>
       type != TileType.wall &&
-          type != TileType.forbidden &&
-          type != TileType.empty;
+      type != TileType.forbidden &&
+      type != TileType.empty;
 
   // ################  HELPERS  ######################
   //

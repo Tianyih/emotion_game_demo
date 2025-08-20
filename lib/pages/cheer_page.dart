@@ -1,6 +1,7 @@
 import 'package:candycrush/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import '../model/inventory.dart';
+import '../utils/optimized_image.dart';
 
 class CheerPage extends StatefulWidget {
   const CheerPage({super.key});
@@ -83,19 +84,17 @@ class _CheerPageState extends State<CheerPage> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      'assets/images/items/helper.jpg',
+                    child: OptimizedImage(
+                      imagePath: 'assets/images/items/helper.jpg',
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[300],
-                          child: const Icon(
-                            Icons.help,
-                            color: Colors.grey,
-                            size: 40,
-                          ),
-                        );
-                      },
+                      errorWidget: Container(
+                        color: Colors.grey[300],
+                        child: const Icon(
+                          Icons.help,
+                          color: Colors.grey,
+                          size: 40,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -134,11 +133,9 @@ class _CheerPageState extends State<CheerPage> {
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/background/cheer_background.png'),
-            fit: BoxFit.cover,
-          ),
+        decoration: OptimizedDecorationImage.getDecorationImage(
+          imagePath: 'assets/images/background/cheer_background.png',
+          fit: BoxFit.cover,
         ),
         child: SafeArea(
           child: SingleChildScrollView(

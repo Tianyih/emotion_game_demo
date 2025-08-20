@@ -1,4 +1,4 @@
-import 'package:candycrush/pages/home_page.dart';
+import 'package:candycrush/pages/splash_page.dart';
 import 'package:flutter/material.dart';
 
 import 'bloc/bloc_provider.dart';
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: const HomePage(),
+        home: const SplashPage(),
       ),
     );
   }

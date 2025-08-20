@@ -22,6 +22,7 @@ import '../panel/timer/stream_timer_counter.dart'; // 添加这个导入
 import '../splash/game_over_splash.dart';
 import '../splash/game_reshuffling_splash.dart';
 import '../splash/game_splash.dart';
+import '../utils/optimized_image.dart';
 import 'help_page.dart';
 import 'cheer_page.dart';
 
@@ -182,11 +183,9 @@ class _GamePageState extends State<GamePage>
           },
         ),
         body: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/background/game_background.png'),
-              fit: BoxFit.cover,
-            ),
+          decoration: OptimizedDecorationImage.getDecorationImage(
+            imagePath: 'assets/images/background/game_background.png',
+            fit: BoxFit.cover,
           ),
           child: GestureDetector(
             onPanDown: (DragDownDetails details) => _onPanDown(details),

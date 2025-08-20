@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../model/inventory.dart';
+import '../utils/optimized_image.dart';
 
 class InventoryPanel extends StatefulWidget {
   const InventoryPanel({super.key});
@@ -127,20 +128,17 @@ class InventoryPanelState extends State<InventoryPanel> {
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(6),
-                                    child: Image.asset(
-                                      item.imagePath,
+                                    child: OptimizedImage(
+                                      imagePath: item.imagePath,
                                       fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                        return Container(
-                                          color: Colors.grey[300],
-                                          child: const Icon(
-                                            Icons.help,
-                                            color: Colors.grey,
-                                            size: 25, // 缩小图标
-                                          ),
-                                        );
-                                      },
+                                      errorWidget: Container(
+                                        color: Colors.grey[300],
+                                        child: const Icon(
+                                          Icons.help,
+                                          color: Colors.grey,
+                                          size: 25, // 缩小图标
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),

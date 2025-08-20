@@ -5,6 +5,7 @@ import '../model/array_2d.dart';
 import 'package:candycrush/bloc/bloc_provider.dart';
 import 'package:candycrush/bloc/game_bloc.dart';
 import '../model/level.dart';
+import '../utils/image_preloader.dart';
 
 class CrushBoard extends StatefulWidget {
   const CrushBoard({super.key, required this.level});
@@ -76,10 +77,14 @@ class _CrushBoardState extends State<CrushBoard> {
         value |= (bottomRight << 3);
 
         if (value != 0 && value != 6 && value != 9) {
+          // 尝试使用预加载的图片
+          final preloadedImage = ImagePreloader.getPreloadedImage(
+              'assets/images/borders/border_$value.png');
+          final imageProvider = preloadedImage ??
+              AssetImage('assets/images/borders/border_$value.png');
+
           boxDecoration = BoxDecoration(
-            image: DecorationImage(
-                image: AssetImage('assets/images/borders/border_$value.png'),
-                fit: BoxFit.cover),
+            image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
           );
         }
         _decorations![row][col] = boxDecoration;
