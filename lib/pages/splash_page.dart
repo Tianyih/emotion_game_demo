@@ -11,7 +11,7 @@ class SplashPage extends StatefulWidget {
 
 class _SplashPageState extends State<SplashPage> {
   double _progress = 0.0;
-  String _loadingText = '正在加载...';
+  String _loadingText = 'Loading...';
 
   @override
   void initState() {
@@ -26,13 +26,13 @@ class _SplashPageState extends State<SplashPage> {
         setState(() {
           _progress = i / 100;
           if (i < 30) {
-            _loadingText = '初始化应用...';
+            _loadingText = 'Initializing the application...';
           } else if (i < 60) {
-            _loadingText = '加载游戏资源...';
+            _loadingText = 'Loading the game resources...';
           } else if (i < 90) {
-            _loadingText = '预加载图片...';
+            _loadingText = 'Preloading the images...';
           } else {
-            _loadingText = '准备完成...';
+            _loadingText = 'Ready to start...';
           }
         });
       }
@@ -42,7 +42,7 @@ class _SplashPageState extends State<SplashPage> {
     // 开始预加载图片
     if (mounted) {
       setState(() {
-        _loadingText = '预加载图片资源...';
+        _loadingText = 'Preloading the images...';
       });
 
       await ImagePreloader.preloadAllImages(context);
