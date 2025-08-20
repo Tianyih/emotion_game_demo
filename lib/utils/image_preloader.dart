@@ -83,9 +83,9 @@ class ImagePreloader {
       );
 
       _isPreloaded = true;
-      debugPrint('✅ 所有图片预加载完成');
+      debugPrint('✅ All images preloaded');
     } catch (e) {
-      debugPrint('❌ 图片预加载失败: $e');
+      debugPrint('❌ Image preloading failed: $e');
     } finally {
       _isPreloading = false;
     }
@@ -112,9 +112,9 @@ class ImagePreloader {
       // 存储预加载的图片
       _preloadedImages[path] = imageProvider;
 
-      debugPrint('✅ 预加载图片: $path');
+      debugPrint('✅ Preloaded image: $path');
     } catch (e) {
-      debugPrint('❌ 预加载图片失败: $path - $e');
+      debugPrint('❌ Preloading image failed: $path - $e');
     }
   }
 
